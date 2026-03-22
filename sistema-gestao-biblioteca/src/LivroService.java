@@ -1,46 +1,169 @@
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
- * Serviço de negócio para cadastro e consulta de livros (armazenamento em memória).
+ * Persistência e regras de acesso a livros via JDBC (PreparedStatement).
  */
 public class LivroService {
 
-    private final List<Livro> livros = new ArrayList<>();
-    private int proximoId = 1;
+    private static final String SQL_INSERT = "INSERT INTO livros (titulo, autor, ano, categoria, status) VALUES (?, ?, ?, ?, ?)";
+    private static final String SQL_UPDATE = "UPDATE livros SET titulo = ?, autor = ?, ano = ?, categoria = ?, status = ? WHERE id = ?";
+    private static final String SQL_DELETE = "DELETE FROM livros WHERE id = ?";
+    private static final String SQL_SELECT_ALL = "SELECT id, titulo, autor, ano, categoria, status FROM livros ORDER BY id";
 
-    public List<Livro> listarPorFiltroStatus(String filtroStatus) {
-        if ("Todos".equals(filtroStatus)) {
-            return new ArrayList<>(livros);
+    /**
+     * INSERT se {@code livro.getId() == 0}; caso contrário UPDATE.
+     */
+    public void salvar(Livro livro) throws SQLException {
+        if (livro.getId() == 0) {
+            inserir(livro);
+        } else {
+            atualizar(livro);
         }
-        List<Livro> resultado = new ArrayList<>();
-        for (Livro l : livros) {
-            if (filtroStatus.equals(l.getStatus())) {
-                resultado.add(l);
+    }
+
+    private void inserir(Livro livro) throws SQLException {
+        try (Connection conn = Conexao.getConexao();
+                PreparedStatement ps = conn.prepareStatement(SQL_INSERT, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, livro.getTitulo());
+            ps.setString(2, livro.getAutor());
+            ps.setString(3, livro.getAno());
+            ps.setString(4, livro.getCategoria());
+            ps.setString(5, livro.getStatus());
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    livro.setId(rs.getInt(1));
+                }
             }
         }
-        return resultado;
     }
 
-    public void salvar(String titulo, String autor, String categoria, String status, String ano) {
-        Livro novo = new Livro(proximoId++, titulo, autor, categoria, status, ano);
-        livros.add(novo);
-    }
-
-    public void editar(int id, String titulo, String autor, String categoria, String status, String ano) {
-        for (Livro l : livros) {
-            if (l.getId() == id) {
-                l.setTitulo(titulo);
-                l.setAutor(autor);
-                l.setCategoria(categoria);
-                l.setStatus(status);
-                l.setAno(ano);
-                return;
-            }
+    private void atualizar(Livro livro) throws SQLException {
+        try (Connection conn = Conexao.getConexao();
+                PreparedStatement ps = conn.prepareStatement(SQL_UPDATE)) {
+            ps.setString(1, livro.getTitulo());
+            ps.setString(2, livro.getAutor());
+            ps.setString(3, livro.getAno());
+            ps.setString(4, livro.getCategoria());
+            ps.setString(5, livro.getStatus());
+            ps.setInt(6, livro.getId());
+            ps.executeUpdate();
         }
     }
 
-    public void excluir(int id) {
-        livros.removeIf(l -> l.getId() == id);
+    public void excluir(int id) throws SQLException {
+        try (Connection conn = Conexao.getConexao();
+                PreparedStatement ps = conn.prepareStatement(SQL_DELETE)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    public ArrayList<Livro> listarTodos() throws SQLException {
+        ArrayList<Livro> lista = new ArrayList<>();
+        try (Connection conn = Conexao.getConexao();
+                PreparedStatement ps = conn.prepareStatement(SQL_SELECT_ALL);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                lista.add(mapear(rs));
+            }
+        }
+        return lista;
+    }
+
+    /**
+     * Busca por texto em título ou autor ({@code LIKE %filtro%}).
+     * Se {@code filtro} for nulo ou vazio (após trim), retorna todos os registros.
+     */
+    public ArrayList<Livro> buscar(String filtro) throws SQLException {
+        String t = filtro == null ? "" : filtro.trim();
+        if (t.isEmpty()) {
+            return listarTodos();
+        }
+        String padrao = "%" + t + "%";
+        String sql = "SELECT id, titulo, autor, ano, categoria, status FROM livros "
+                + "WHERE titulo LIKE ? OR autor LIKE ? ORDER BY id";
+        ArrayList<Livro> lista = new ArrayList<>();
+        try (Connection conn = Conexao.getConexao();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, padrao);
+            ps.setString(2, padrao);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(mapear(rs));
+                }
+            }
+        }
+        return lista;
+    }
+
+    /**
+     * Pesquisa com filtros opcionais (painel superior). Campos vazios ou "Todos" não restringem.
+     */
+    public ArrayList<Livro> pesquisarComFiltros(String filtroTitulo, String filtroAutor, String filtroAno,
+            String filtroCategoria, String filtroStatus) throws SQLException {
+        StringBuilder sql = new StringBuilder(
+                "SELECT id, titulo, autor, ano, categoria, status FROM livros WHERE 1=1");
+        ArrayList<Object> params = new ArrayList<>();
+
+        if (filtroTitulo != null && !filtroTitulo.trim().isEmpty()) {
+            sql.append(" AND titulo LIKE ?");
+            params.add("%" + filtroTitulo.trim() + "%");
+        }
+        if (filtroAutor != null && !filtroAutor.trim().isEmpty()) {
+            sql.append(" AND autor LIKE ?");
+            params.add("%" + filtroAutor.trim() + "%");
+        }
+        if (filtroAno != null && !filtroAno.trim().isEmpty()) {
+            sql.append(" AND ano LIKE ?");
+            params.add("%" + filtroAno.trim() + "%");
+        }
+        if (filtroCategoria != null && !filtroCategoria.trim().isEmpty() && !"Todos".equals(filtroCategoria)) {
+            sql.append(" AND categoria = ?");
+            params.add(filtroCategoria.trim());
+        }
+        if (filtroStatus != null && !filtroStatus.trim().isEmpty() && !"Todos".equals(filtroStatus)) {
+            sql.append(" AND status = ?");
+            params.add(filtroStatus.trim());
+        }
+        sql.append(" ORDER BY id");
+
+        ArrayList<Livro> lista = new ArrayList<>();
+        try (Connection conn = Conexao.getConexao();
+                PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(mapear(rs));
+                }
+            }
+        }
+        return lista;
+    }
+
+    private static Livro mapear(ResultSet rs) throws SQLException {
+        int id = rs.getInt("id");
+        String titulo = rs.getString("titulo");
+        String autor = rs.getString("autor");
+        String ano = rs.getString("ano");
+        if (ano == null) {
+            ano = "";
+        }
+        String categoria = rs.getString("categoria");
+        if (categoria == null) {
+            categoria = "";
+        }
+        String status = rs.getString("status");
+        if (status == null) {
+            status = "";
+        }
+        return new Livro(id, titulo, autor, categoria, status, ano);
     }
 }

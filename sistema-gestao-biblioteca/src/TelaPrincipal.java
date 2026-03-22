@@ -1,3 +1,10 @@
+import java.sql.SQLException;
+import java.util.ArrayList;
+import javax.swing.JOptionPane;
+import javax.swing.ListSelectionModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.table.DefaultTableModel;
+
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
@@ -11,11 +18,20 @@ public class TelaPrincipal extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(TelaPrincipal.class.getName());
 
+    private final LivroService livroService = new LivroService();
+    /** ID do livro em edição; {@code null} indica novo cadastro. */
+    private Integer idLivroOculto;
+
     /**
      * Creates new form TelaPrincipal
      */
     public TelaPrincipal() {
         initComponents();
+        idLivroOculto = null;
+        configurarOpcoesFiltro();
+        limparTextosPlaceholders();
+        configurarSelecaoTabela();
+        carregarTabela();
     }
 
     /**
@@ -27,21 +43,424 @@ public class TelaPrincipal extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPanel1 = new javax.swing.JPanel();
+        lblFiltroTitulo = new javax.swing.JLabel();
+        txtFiltroTitulo = new javax.swing.JTextField();
+        lblFiltroAutor = new javax.swing.JLabel();
+        txtFiltroAutor = new javax.swing.JTextField();
+        lblFiltroAno = new javax.swing.JLabel();
+        txtFiltroAno = new javax.swing.JTextField();
+        lblFiltroCategoria = new javax.swing.JLabel();
+        cbFiltroCategoria = new javax.swing.JComboBox<>();
+        lblFiltroStatus = new javax.swing.JLabel();
+        cbFiltroStatus = new javax.swing.JComboBox<>();
+        btnPesquisar = new javax.swing.JButton();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        tblLivros = new javax.swing.JTable();
+        jPanel2 = new javax.swing.JPanel();
+        lblTitulo = new javax.swing.JLabel();
+        txtTitulo = new javax.swing.JTextField();
+        lblAutor = new javax.swing.JLabel();
+        txtAutor = new javax.swing.JTextField();
+        lblAno = new javax.swing.JLabel();
+        txtAno = new javax.swing.JTextField();
+        lblCategoria = new javax.swing.JLabel();
+        cbCategoria = new javax.swing.JComboBox<>();
+        lblStatus = new javax.swing.JLabel();
+        cbStatus = new javax.swing.JComboBox<>();
+        btnSalvar = new javax.swing.JButton();
+        btnEditar = new javax.swing.JButton();
+        btnExcluir = new javax.swing.JButton();
+        btnLimpar = new javax.swing.JButton();
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("SGB - Sistema de Gestão de Biblioteca.");
+        setResizable(false);
+
+        jPanel1.setBackground(new java.awt.Color(153, 153, 255));
+        jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("Filtros de Pesquisa"));
+
+        lblFiltroTitulo.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblFiltroTitulo.setText("Título:");
+        jPanel1.add(lblFiltroTitulo);
+
+        txtFiltroTitulo.setText("Titulo aqui");
+        txtFiltroTitulo.addActionListener(this::txtFiltroTituloActionPerformed);
+        jPanel1.add(txtFiltroTitulo);
+
+        lblFiltroAutor.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblFiltroAutor.setText("Autor:");
+        jPanel1.add(lblFiltroAutor);
+
+        txtFiltroAutor.setText("Autor aqui");
+        txtFiltroAutor.addActionListener(this::txtFiltroAutorActionPerformed);
+        jPanel1.add(txtFiltroAutor);
+
+        lblFiltroAno.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblFiltroAno.setText("Ano:");
+        jPanel1.add(lblFiltroAno);
+
+        txtFiltroAno.setText("Ano aqui");
+        txtFiltroAno.addActionListener(this::txtFiltroAnoActionPerformed);
+        jPanel1.add(txtFiltroAno);
+
+        lblFiltroCategoria.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblFiltroCategoria.setText("Categoria:");
+        jPanel1.add(lblFiltroCategoria);
+
+        cbFiltroCategoria.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Ficção", "Didático", "Biografia", "Outros" }));
+        jPanel1.add(cbFiltroCategoria);
+
+        lblFiltroStatus.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblFiltroStatus.setText("Status:");
+        jPanel1.add(lblFiltroStatus);
+
+        cbFiltroStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Disponível", "Emprestado", "Manutenção" }));
+        jPanel1.add(cbFiltroStatus);
+
+        btnPesquisar.setText("Pesquisar");
+        btnPesquisar.addActionListener(this::btnPesquisarActionPerformed);
+        jPanel1.add(btnPesquisar);
+
+        jScrollPane1.setForeground(new java.awt.Color(255, 255, 255));
+
+        tblLivros.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null}
+            },
+            new String [] {
+                "ID", "Título", "Autor", "Ano", "Categoria", "Status"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        jScrollPane1.setViewportView(tblLivros);
+        if (tblLivros.getColumnModel().getColumnCount() > 0) {
+            tblLivros.getColumnModel().getColumn(0).setResizable(false);
+            tblLivros.getColumnModel().getColumn(1).setResizable(false);
+            tblLivros.getColumnModel().getColumn(2).setResizable(false);
+            tblLivros.getColumnModel().getColumn(3).setResizable(false);
+            tblLivros.getColumnModel().getColumn(4).setResizable(false);
+            tblLivros.getColumnModel().getColumn(5).setResizable(false);
+        }
+
+        jPanel2.setBackground(new java.awt.Color(153, 153, 255));
+        jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder("Dados do Livro"));
+        jPanel2.setLayout(new java.awt.GridBagLayout());
+
+        lblTitulo.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblTitulo.setText("Título:");
+        jPanel2.add(lblTitulo, new java.awt.GridBagConstraints());
+
+        txtTitulo.setText("Titulo aqui");
+        txtTitulo.addActionListener(this::txtTituloActionPerformed);
+        jPanel2.add(txtTitulo, new java.awt.GridBagConstraints());
+
+        lblAutor.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblAutor.setText("Autor:");
+        jPanel2.add(lblAutor, new java.awt.GridBagConstraints());
+
+        txtAutor.setText("Autor aqui");
+        txtAutor.addActionListener(this::txtAutorActionPerformed);
+        jPanel2.add(txtAutor, new java.awt.GridBagConstraints());
+
+        lblAno.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblAno.setText("Ano:");
+        jPanel2.add(lblAno, new java.awt.GridBagConstraints());
+
+        txtAno.setText("Ano aqui");
+        txtAno.addActionListener(this::txtAnoActionPerformed);
+        jPanel2.add(txtAno, new java.awt.GridBagConstraints());
+
+        lblCategoria.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblCategoria.setText("Categoria:");
+        jPanel2.add(lblCategoria, new java.awt.GridBagConstraints());
+
+        cbCategoria.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Ficção", "Didático", "Biografia", "Outros" }));
+        jPanel2.add(cbCategoria, new java.awt.GridBagConstraints());
+
+        lblStatus.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblStatus.setText("Status:");
+        jPanel2.add(lblStatus, new java.awt.GridBagConstraints());
+
+        cbStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Disponível", "Emprestado", "Manutenção" }));
+        jPanel2.add(cbStatus, new java.awt.GridBagConstraints());
+
+        btnSalvar.setText("Salvar");
+        btnSalvar.addActionListener(this::btnSalvarActionPerformed);
+        jPanel2.add(btnSalvar, new java.awt.GridBagConstraints());
+
+        btnEditar.setText("Editar");
+        btnEditar.addActionListener(this::btnEditarActionPerformed);
+        jPanel2.add(btnEditar, new java.awt.GridBagConstraints());
+
+        btnExcluir.setText("Excluir");
+        btnExcluir.addActionListener(this::btnExcluirActionPerformed);
+        jPanel2.add(btnExcluir, new java.awt.GridBagConstraints());
+
+        btnLimpar.setText("Limpar");
+        btnLimpar.addActionListener(this::btnLimparActionPerformed);
+        jPanel2.add(btnLimpar, new java.awt.GridBagConstraints());
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1024, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 1024, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1)
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 768, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 672, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
+                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
+
+    private void txtFiltroTituloActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtFiltroTituloActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtFiltroTituloActionPerformed
+
+    private void txtFiltroAutorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtFiltroAutorActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtFiltroAutorActionPerformed
+
+    private void txtFiltroAnoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtFiltroAnoActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtFiltroAnoActionPerformed
+
+    private void btnPesquisarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPesquisarActionPerformed
+        carregarTabela();
+    }//GEN-LAST:event_btnPesquisarActionPerformed
+
+    private void txtTituloActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTituloActionPerformed
+        // Enter no campo título (opcional)
+    }//GEN-LAST:event_txtTituloActionPerformed
+
+    private void txtAutorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtAutorActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtAutorActionPerformed
+
+    private void txtAnoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtAnoActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtAnoActionPerformed
+
+    private void btnSalvarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSalvarActionPerformed
+        String titulo = txtTitulo.getText().trim();
+        String autor = txtAutor.getText().trim();
+        if (titulo.isEmpty() || autor.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Preencha Título e Autor.",
+                    "Validação",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String ano = txtAno.getText().trim();
+        String categoria = String.valueOf(cbCategoria.getSelectedItem());
+        String status = String.valueOf(cbStatus.getSelectedItem());
+        int id = idLivroOculto != null ? idLivroOculto : 0;
+        Livro livro = new Livro(id, titulo, autor, categoria, status, ano);
+        try {
+            livroService.salvar(livro);
+            JOptionPane.showMessageDialog(this,
+                    id == 0 ? "Livro cadastrado com sucesso." : "Livro atualizado com sucesso.",
+                    "Sucesso",
+                    JOptionPane.INFORMATION_MESSAGE);
+            carregarTabela();
+            limparFormulario();
+        } catch (SQLException ex) {
+            logger.log(java.util.logging.Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(this,
+                    "Erro ao salvar no banco de dados:\n" + ex.getMessage(),
+                    "Erro de conexão",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_btnSalvarActionPerformed
+
+    private void btnEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditarActionPerformed
+        int linha = tblLivros.getSelectedRow();
+        if (linha < 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Selecione um livro na tabela.",
+                    "Edição",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        preencherFormularioDaLinha(linha);
+    }//GEN-LAST:event_btnEditarActionPerformed
+
+    private void btnExcluirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExcluirActionPerformed
+        int linha = tblLivros.getSelectedRow();
+        if (linha < 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Selecione um livro na tabela.",
+                    "Exclusão",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        int id = obterIdDaLinha(linha);
+        int op = JOptionPane.showConfirmDialog(this,
+                "Confirma a exclusão deste livro?",
+                "Confirmar exclusão",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+        if (op != JOptionPane.YES_OPTION) {
+            return;
+        }
+        try {
+            livroService.excluir(id);
+            JOptionPane.showMessageDialog(this,
+                    "Livro excluído com sucesso.",
+                    "Sucesso",
+                    JOptionPane.INFORMATION_MESSAGE);
+            carregarTabela();
+            limparFormulario();
+        } catch (SQLException ex) {
+            logger.log(java.util.logging.Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(this,
+                    "Erro ao excluir no banco de dados:\n" + ex.getMessage(),
+                    "Erro de conexão",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_btnExcluirActionPerformed
+
+    private void btnLimparActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimparActionPerformed
+        limparFormulario();
+    }//GEN-LAST:event_btnLimparActionPerformed
+
+    private void configurarOpcoesFiltro() {
+        cbFiltroCategoria.insertItemAt("Todos", 0);
+        cbFiltroCategoria.setSelectedIndex(0);
+        cbFiltroStatus.insertItemAt("Todos", 0);
+        cbFiltroStatus.setSelectedIndex(0);
+    }
+
+    private void limparTextosPlaceholders() {
+        txtFiltroTitulo.setText("");
+        txtFiltroAutor.setText("");
+        txtFiltroAno.setText("");
+        txtTitulo.setText("");
+        txtAutor.setText("");
+        txtAno.setText("");
+    }
+
+    private void configurarSelecaoTabela() {
+        tblLivros.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tblLivros.getSelectionModel().addListSelectionListener((ListSelectionEvent e) -> {
+            if (e.getValueIsAdjusting()) {
+                return;
+            }
+            int linha = tblLivros.getSelectedRow();
+            if (linha >= 0) {
+                preencherFormularioDaLinha(linha);
+            }
+        });
+    }
+
+    private void preencherFormularioDaLinha(int linha) {
+        DefaultTableModel m = (DefaultTableModel) tblLivros.getModel();
+        idLivroOculto = obterIdDaLinha(linha);
+        txtTitulo.setText(String.valueOf(m.getValueAt(linha, 1)));
+        txtAutor.setText(String.valueOf(m.getValueAt(linha, 2)));
+        Object anoVal = m.getValueAt(linha, 3);
+        txtAno.setText(anoVal == null ? "" : String.valueOf(anoVal));
+        selecionarCombo(cbCategoria, String.valueOf(m.getValueAt(linha, 4)));
+        selecionarCombo(cbStatus, String.valueOf(m.getValueAt(linha, 5)));
+    }
+
+    private static void selecionarCombo(javax.swing.JComboBox<String> combo, String valor) {
+        for (int i = 0; i < combo.getItemCount(); i++) {
+            if (valor.equals(combo.getItemAt(i))) {
+                combo.setSelectedIndex(i);
+                return;
+            }
+        }
+    }
+
+    private int obterIdDaLinha(int linha) {
+        Object v = tblLivros.getModel().getValueAt(linha, 0);
+        if (v instanceof Number) {
+            return ((Number) v).intValue();
+        }
+        return Integer.parseInt(String.valueOf(v));
+    }
+
+    private void carregarTabela() {
+        try {
+            ArrayList<Livro> lista = livroService.pesquisarComFiltros(
+                    txtFiltroTitulo.getText(),
+                    txtFiltroAutor.getText(),
+                    txtFiltroAno.getText(),
+                    String.valueOf(cbFiltroCategoria.getSelectedItem()),
+                    String.valueOf(cbFiltroStatus.getSelectedItem()));
+            DefaultTableModel m = (DefaultTableModel) tblLivros.getModel();
+            m.setRowCount(0);
+            for (Livro l : lista) {
+                m.addRow(new Object[]{
+                    l.getId(),
+                    l.getTitulo(),
+                    l.getAutor(),
+                    anoParaColuna(l.getAno()),
+                    l.getCategoria(),
+                    l.getStatus()
+                });
+            }
+        } catch (SQLException ex) {
+            logger.log(java.util.logging.Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(this,
+                    "Erro ao consultar o banco de dados:\n" + ex.getMessage(),
+                    "Erro de conexão",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private static Integer anoParaColuna(String ano) {
+        if (ano == null || ano.isEmpty()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(ano.trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private void limparFormulario() {
+        idLivroOculto = null;
+        txtTitulo.setText("");
+        txtAutor.setText("");
+        txtAno.setText("");
+        cbCategoria.setSelectedIndex(0);
+        cbStatus.setSelectedIndex(0);
+        tblLivros.clearSelection();
+        txtTitulo.requestFocus();
+    }
 
     /**
      * @param args the command line arguments
@@ -69,5 +488,34 @@ public class TelaPrincipal extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnEditar;
+    private javax.swing.JButton btnExcluir;
+    private javax.swing.JButton btnLimpar;
+    private javax.swing.JButton btnPesquisar;
+    private javax.swing.JButton btnSalvar;
+    private javax.swing.JComboBox<String> cbCategoria;
+    private javax.swing.JComboBox<String> cbFiltroCategoria;
+    private javax.swing.JComboBox<String> cbFiltroStatus;
+    private javax.swing.JComboBox<String> cbStatus;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JLabel lblAno;
+    private javax.swing.JLabel lblAutor;
+    private javax.swing.JLabel lblCategoria;
+    private javax.swing.JLabel lblFiltroAno;
+    private javax.swing.JLabel lblFiltroAutor;
+    private javax.swing.JLabel lblFiltroCategoria;
+    private javax.swing.JLabel lblFiltroStatus;
+    private javax.swing.JLabel lblFiltroTitulo;
+    private javax.swing.JLabel lblStatus;
+    private javax.swing.JLabel lblTitulo;
+    private javax.swing.JTable tblLivros;
+    private javax.swing.JTextField txtAno;
+    private javax.swing.JTextField txtAutor;
+    private javax.swing.JTextField txtFiltroAno;
+    private javax.swing.JTextField txtFiltroAutor;
+    private javax.swing.JTextField txtFiltroTitulo;
+    private javax.swing.JTextField txtTitulo;
     // End of variables declaration//GEN-END:variables
 }
