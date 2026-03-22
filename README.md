@@ -29,7 +29,7 @@ O **SGB** é uma aplicação desktop desenvolvida para consolidar conceitos de *
 | **Interface (GUI)** | Java Swing |
 | **Build/Automação** | Apache Ant |
 | **Banco de Dados** | MySQL (MariaDB) |
-| **Design/UX** | Figma & Cursor IA |
+| **Design/UX** | Figma |
 | **Modelagem** | UML (Casos de Uso, Classes, Sequência e Atividades) |
 
 ---
@@ -92,5 +92,4 @@ sistema-gestao-biblioteca/
 
 Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](https://www.google.com/search?q=LICENSE) para detalhes.
 
-```
 -----
