@@ -2,7 +2,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 
 /**
@@ -10,49 +9,19 @@ import java.util.ArrayList;
  */
 public class LivroService {
 
-    private static final String SQL_INSERT = "INSERT INTO livros (titulo, autor, ano, categoria, status) VALUES (?, ?, ?, ?, ?)";
-    private static final String SQL_UPDATE = "UPDATE livros SET titulo = ?, autor = ?, ano = ?, categoria = ?, status = ? WHERE id = ?";
+    private final LivroDAO livroDAO = new LivroDAO();
+
     private static final String SQL_DELETE = "DELETE FROM livros WHERE id = ?";
     private static final String SQL_SELECT_ALL = "SELECT id, titulo, autor, ano, categoria, status FROM livros ORDER BY id";
 
     /**
-     * INSERT se {@code livro.getId() == 0}; caso contrário UPDATE.
+     * INSERT se {@code livro.getId() == 0}; caso contrário UPDATE (via {@link LivroDAO}).
      */
     public void salvar(Livro livro) throws SQLException {
         if (livro.getId() == 0) {
-            inserir(livro);
+            livroDAO.adicionar(livro);
         } else {
-            atualizar(livro);
-        }
-    }
-
-    private void inserir(Livro livro) throws SQLException {
-        try (Connection conn = Conexao.getConexao();
-                PreparedStatement ps = conn.prepareStatement(SQL_INSERT, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, livro.getTitulo());
-            ps.setString(2, livro.getAutor());
-            ps.setString(3, livro.getAno());
-            ps.setString(4, livro.getCategoria());
-            ps.setString(5, livro.getStatus());
-            ps.executeUpdate();
-            try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (rs.next()) {
-                    livro.setId(rs.getInt(1));
-                }
-            }
-        }
-    }
-
-    private void atualizar(Livro livro) throws SQLException {
-        try (Connection conn = Conexao.getConexao();
-                PreparedStatement ps = conn.prepareStatement(SQL_UPDATE)) {
-            ps.setString(1, livro.getTitulo());
-            ps.setString(2, livro.getAutor());
-            ps.setString(3, livro.getAno());
-            ps.setString(4, livro.getCategoria());
-            ps.setString(5, livro.getStatus());
-            ps.setInt(6, livro.getId());
-            ps.executeUpdate();
+            livroDAO.atualizar(livro);
         }
     }
 

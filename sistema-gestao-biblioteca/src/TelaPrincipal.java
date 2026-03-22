@@ -19,7 +19,8 @@ public class TelaPrincipal extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(TelaPrincipal.class.getName());
 
     private final LivroService livroService = new LivroService();
-    /** ID do livro em edição; {@code null} indica novo cadastro. */
+    private final LivroDAO livroDAO = new LivroDAO();
+    /** ID do livro em edição; {@code null} ou ausência de ID indica inclusão. */
     private Integer idLivroOculto;
 
     /**
@@ -31,7 +32,7 @@ public class TelaPrincipal extends javax.swing.JFrame {
         configurarOpcoesFiltro();
         limparTextosPlaceholders();
         configurarSelecaoTabela();
-        carregarTabela();
+        atualizarTabela();
     }
 
     /**
@@ -256,7 +257,7 @@ public class TelaPrincipal extends javax.swing.JFrame {
     }//GEN-LAST:event_txtFiltroAnoActionPerformed
 
     private void btnPesquisarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPesquisarActionPerformed
-        carregarTabela();
+        atualizarTabela();
     }//GEN-LAST:event_btnPesquisarActionPerformed
 
     private void txtTituloActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTituloActionPerformed
@@ -281,19 +282,44 @@ public class TelaPrincipal extends javax.swing.JFrame {
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
-        String ano = txtAno.getText().trim();
+
+        String anoTexto = txtAno.getText().trim();
+        final String anoNormalizado;
+        try {
+            int anoInt = Integer.parseInt(anoTexto);
+            anoNormalizado = String.valueOf(anoInt);
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "O campo Ano deve conter apenas números!",
+                    "Validação",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         String categoria = String.valueOf(cbCategoria.getSelectedItem());
         String status = String.valueOf(cbStatus.getSelectedItem());
-        int id = idLivroOculto != null ? idLivroOculto : 0;
-        Livro livro = new Livro(id, titulo, autor, categoria, status, ano);
+
+        boolean inclusao = idLivroOculto == null;
+        Livro livro = inclusao
+                ? new Livro(0, titulo, autor, categoria, status, anoNormalizado)
+                : new Livro(idLivroOculto, titulo, autor, categoria, status, anoNormalizado);
+
         try {
-            livroService.salvar(livro);
-            JOptionPane.showMessageDialog(this,
-                    id == 0 ? "Livro cadastrado com sucesso." : "Livro atualizado com sucesso.",
-                    "Sucesso",
-                    JOptionPane.INFORMATION_MESSAGE);
-            carregarTabela();
+            if (inclusao) {
+                livroDAO.adicionar(livro);
+                JOptionPane.showMessageDialog(this,
+                        "Livro cadastrado com sucesso.",
+                        "Sucesso",
+                        JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                livroDAO.atualizar(livro);
+                JOptionPane.showMessageDialog(this,
+                        "Livro atualizado com sucesso.",
+                        "Sucesso",
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
             limparFormulario();
+            atualizarTabela();
         } catch (SQLException ex) {
             logger.log(java.util.logging.Level.SEVERE, null, ex);
             JOptionPane.showMessageDialog(this,
@@ -339,7 +365,7 @@ public class TelaPrincipal extends javax.swing.JFrame {
                     "Livro excluído com sucesso.",
                     "Sucesso",
                     JOptionPane.INFORMATION_MESSAGE);
-            carregarTabela();
+            atualizarTabela();
             limparFormulario();
         } catch (SQLException ex) {
             logger.log(java.util.logging.Level.SEVERE, null, ex);
@@ -411,7 +437,10 @@ public class TelaPrincipal extends javax.swing.JFrame {
         return Integer.parseInt(String.valueOf(v));
     }
 
-    private void carregarTabela() {
+    /**
+     * Limpa e recarrega a grade central conforme os filtros atuais.
+     */
+    private void atualizarTabela() {
         try {
             ArrayList<Livro> lista = livroService.pesquisarComFiltros(
                     txtFiltroTitulo.getText(),
