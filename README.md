@@ -53,7 +53,7 @@ sistema-gestao-biblioteca/
     │       ├── 📂 service/     # Lógica de Negócio (LivroService.java)
     │       └── 📂 view/        # Interface Gráfica (TelaPrincipal.java)
     └── 📂 nbproject/           # Metadados do NetBeans
-````
+```
 
 -----
 
@@ -88,10 +88,20 @@ sistema-gestao-biblioteca/
 
 <div align="center">
 
-<p><em>Capturas de tela da aplicação em execução:</em></p>
+<p><em>Capturas da aplicação (<code>docs/telas/</code>):</em></p>
 
-<img src="docs/telas/1.png" width="450" alt="Visão geral do sistema">
-<img src="docs/telas/2.png" width="450" alt="Fluxo de cadastro">
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <img src="docs/telas/1.png" width="280" alt="Visão geral do sistema"/>
+      <br/><sub><b>1</b> — Visão geral</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <img src="docs/telas/2.png" width="280" alt="Fluxo de cadastro"/>
+      <br/><sub><b>2</b> — Cadastro</sub>
+    </td>
+  </tr>
+</table>
 
 </div>
 
